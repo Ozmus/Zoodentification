@@ -1,7 +1,7 @@
 import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from keras.models import Sequential
+from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from keras.preprocessing.image import ImageDataGenerator
 from sklearn.model_selection import train_test_split
 import numpy as np
 import pandas as pd
@@ -19,10 +19,17 @@ def load_data(data_dir):
     images = []
     labels = []
     for idx, animal_class in enumerate(CLASSES):
-        class_dir = os.path.join(data_dir, animal_class)
+        # Now we look in the 'images' subfolder of each class
+        class_dir = os.path.join(data_dir, animal_class, 'images')
         if not os.path.exists(class_dir):
+            print(f"Directory {class_dir} not found!")
             continue
-        for image_path in glob(os.path.join(class_dir, '*.jpg')):
+        # Find all .jpg images within the class's 'images' subfolder
+        image_paths = glob(os.path.join(class_dir, '*.jpg'))
+        if len(image_paths) == 0:
+            print(f"No images found for class {animal_class} in directory {class_dir}.")
+        for image_path in image_paths:
+            # Load image, resize, and convert to array
             img = tf.keras.preprocessing.image.load_img(image_path, target_size=IMAGE_SIZE)
             img = tf.keras.preprocessing.image.img_to_array(img)
             images.append(img)
@@ -32,7 +39,7 @@ def load_data(data_dir):
     return images, labels
 
 # 2. Load data and split into train, validation, and test sets
-data_dir = '/path/to/openimages/dataset'  # Replace with your data directory
+data_dir = 'openimages_zoo_animals'  # Replace with your data directory
 images, labels = load_data(data_dir)
 X_train, X_val, y_train, y_val = train_test_split(images, labels, test_size=0.2, random_state=42)
 
@@ -84,4 +91,4 @@ val_loss, val_accuracy = model.evaluate(val_generator)
 print(f"Validation accuracy: {val_accuracy:.2f}")
 
 # Save the trained model
-model.save('zoo_animal_classifier.h5')
+model.save('zoo_animal_classifier.keras')
