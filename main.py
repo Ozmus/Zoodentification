@@ -7,12 +7,16 @@ import numpy as np
 import pandas as pd
 import os
 from glob import glob
+import matplotlib.pyplot as plt
 
 # Define parameters
 BATCH_SIZE = 32
-IMAGE_SIZE = (128, 128)  # Adjust based on dataset and compute resources
+IMAGE_SIZE = (128, 128)
 EPOCHS = 20
-CLASSES = ['elephant', 'giraffe', 'zebra', 'lion', 'tiger']  # Example animal classes
+CLASSES = ['elephant', 'giraffe', 'lion', 'tiger',
+           'bear', 'red panda', 'kangaroo', 'panda',
+           'crocodile', 'penguin', 'jaguar (animal)',
+           'rhinoceros', 'hippopotamus', 'monkey']
 
 # 1. Load and Prepare the Dataset
 def load_data(data_dir):
@@ -39,7 +43,7 @@ def load_data(data_dir):
     return images, labels
 
 # 2. Load data and split into train, validation, and test sets
-data_dir = 'openimages_zoo_animals'  # Replace with your data directory
+data_dir = 'openimages_zoo_animals15'
 images, labels = load_data(data_dir)
 X_train, X_val, y_train, y_val = train_test_split(images, labels, test_size=0.2, random_state=42)
 
@@ -86,9 +90,34 @@ history = model.fit(
     validation_steps=len(X_val) // BATCH_SIZE
 )
 
+# Save accuracy plot
+plt.figure(figsize=(10, 6))
+plt.plot(history.history['accuracy'], label='Train Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+plt.title('Training and Validation Accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.legend()
+plt.grid(True)
+plt.savefig('accuracy_plot.png')  # Save the plot as a PNG file
+plt.close()
+
+# Save loss plot
+plt.figure(figsize=(10, 6))
+plt.plot(history.history['loss'], label='Train Loss')
+plt.plot(history.history['val_loss'], label='Validation Loss')
+plt.title('Training and Validation Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+plt.grid(True)
+plt.savefig('loss_plot.png')  # Save the plot as a PNG file
+plt.close()
+
 # 7. Evaluate the Model
 val_loss, val_accuracy = model.evaluate(val_generator)
 print(f"Validation accuracy: {val_accuracy:.2f}")
 
 # Save the trained model
-model.save('zoo_animal_classifier.keras')
+model.save('zoo_animal_classifier15-50epochs.keras')
+model.save('zoo_animal_classifier15-50epochs.h5')

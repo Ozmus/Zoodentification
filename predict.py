@@ -17,7 +17,7 @@ def preprocess_image(image_path, target_size=(128, 128)):
 model = tf.keras.models.load_model('zoo_animal_classifier.h5')
 
 # Path to the image you want to classify
-image_path = 'test_images/lion/lion.jpg'
+image_path = 'test_images/elephant/elephant.jpg'
 
 # Preprocess the image
 image = preprocess_image(image_path, target_size=(128, 128))
