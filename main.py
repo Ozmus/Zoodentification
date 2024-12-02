@@ -119,5 +119,5 @@ val_loss, val_accuracy = model.evaluate(val_generator)
 print(f"Validation accuracy: {val_accuracy:.2f}")
 
 # Save the trained model
-model.save('zoo_animal_classifier15-50epochs.keras')
-model.save('zoo_animal_classifier15-50epochs.h5')
+model.save('zoo_animal_classifier15-20epochs-100each.keras')
+model.save('zoo_animal_classifier15-20epochs-100each.h5')
