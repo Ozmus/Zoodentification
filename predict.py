@@ -17,7 +17,7 @@ def preprocess_image(image_path, target_size=(128, 128)):
     return img_array
 
 # Load the trained model
-model = tf.keras.models.load_model('zoo_animal_classifier15-20epochs-100each.h5')
+model = tf.keras.models.load_model('zoo_animal_classifier15.h5')
 
 # Path to the image you want to classify
 image_path = 'test-images/{{animal_class}}/{{animal_class}}{{number}}.jpg'
@@ -49,19 +49,3 @@ for animal_class in CLASSES:
 
 print(true_count)
 print(false_count)
-'''
-# Preprocess the image
-image = preprocess_image(image_path, target_size=(128, 128))
-
-# Make a prediction
-predictions = model.predict(image)
-
-# Get the index of the highest probability
-predicted_class_index = np.argmax(predictions)
-
-# Get the class label
-predicted_class = CLASSES[predicted_class_index]
-
-confidence = predictions[0][predicted_class_index]
-print(f"Predicted class: {predicted_class} with confidence: {confidence:.2f}")
-'''

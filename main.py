@@ -1,7 +1,10 @@
 import tensorflow as tf
-from keras.models import Sequential
-from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from keras.models import Sequential, Model
+from keras.layers import Conv2D, MaxPooling2D, GlobalAveragePooling2D, Flatten, Dense, Dropout
 from keras.preprocessing.image import ImageDataGenerator
+from keras.applications import MobileNetV2
+
+from sklearn.utils.class_weight import compute_class_weight
 from sklearn.model_selection import train_test_split
 import numpy as np
 import pandas as pd
@@ -10,9 +13,9 @@ from glob import glob
 import matplotlib.pyplot as plt
 
 # Define parameters
-BATCH_SIZE = 32
+BATCH_SIZE = 128
 IMAGE_SIZE = (128, 128)
-EPOCHS = 20
+EPOCHS = 200
 CLASSES = ['elephant', 'giraffe', 'lion', 'tiger',
            'bear', 'red panda', 'kangaroo', 'panda',
            'crocodile', 'penguin', 'jaguar (animal)',
@@ -36,6 +39,10 @@ def load_data(data_dir):
             # Load image, resize, and convert to array
             img = tf.keras.preprocessing.image.load_img(image_path, target_size=IMAGE_SIZE)
             img = tf.keras.preprocessing.image.img_to_array(img)
+
+            # Preprocess the image using EfficientNet's preprocessing
+            img = tf.keras.applications.efficientnet.preprocess_input(img)
+
             images.append(img)
             labels.append(idx)  # Assign a class index for each animal type
     images = np.array(images, dtype='float32') / 255.0  # Normalize to [0,1]
@@ -47,35 +54,40 @@ data_dir = 'openimages_zoo_animals15'
 images, labels = load_data(data_dir)
 X_train, X_val, y_train, y_val = train_test_split(images, labels, test_size=0.2, random_state=42)
 
+# Compute class weights
+class_weights = compute_class_weight(
+    class_weight='balanced',
+    classes=np.unique(np.argmax(labels, axis=1)),
+    y=np.argmax(labels, axis=1)
+)
+class_weights = dict(enumerate(class_weights))
+
 # 3. Define the CNN Model Architecture
 def build_model(input_shape=(128, 128, 3), num_classes=len(CLASSES)):
+    base_model = MobileNetV2(weights='imagenet', include_top=False, input_shape=(128, 128, 3))
+    base_model.trainable = True
+
     model = Sequential([
-        Conv2D(32, (3, 3), activation='relu', input_shape=input_shape),
-        MaxPooling2D((2, 2)),
-        Conv2D(64, (3, 3), activation='relu'),
-        MaxPooling2D((2, 2)),
-        Conv2D(128, (3, 3), activation='relu'),
-        MaxPooling2D((2, 2)),
-        Flatten(),
+        base_model,
+        GlobalAveragePooling2D(),
         Dense(128, activation='relu'),
         Dropout(0.5),
-        Dense(num_classes, activation='softmax')
+        Dense(len(CLASSES), activation='softmax')
     ])
     return model
 
 # 4. Compile the Model
 model = build_model()
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-5),
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
 # 5. Data Augmentation
 train_datagen = ImageDataGenerator(
-    rotation_range=20,
-    width_shift_range=0.1,
-    height_shift_range=0.1,
-    shear_range=0.2,
-    zoom_range=0.2,
-    horizontal_flip=True
+    horizontal_flip=True,
+    rotation_range=20
 )
+
+
 train_generator = train_datagen.flow(X_train, y_train, batch_size=BATCH_SIZE)
 
 val_datagen = ImageDataGenerator()  # No augmentation for validation
@@ -87,7 +99,8 @@ history = model.fit(
     steps_per_epoch=len(X_train) // BATCH_SIZE,
     epochs=EPOCHS,
     validation_data=val_generator,
-    validation_steps=len(X_val) // BATCH_SIZE
+    validation_steps=len(X_val) // BATCH_SIZE,
+    class_weight=class_weights  # Pass the computed class weights here
 )
 
 # Save accuracy plot
@@ -119,5 +132,5 @@ val_loss, val_accuracy = model.evaluate(val_generator)
 print(f"Validation accuracy: {val_accuracy:.2f}")
 
 # Save the trained model
-model.save('zoo_animal_classifier15-20epochs-100each.keras')
-model.save('zoo_animal_classifier15-20epochs-100each.h5')
+model.save('zoo_animal_classifier15.keras')
+model.save('zoo_animal_classifier15.h5')
